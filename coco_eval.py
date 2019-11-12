@@ -22,6 +22,8 @@ def evaluate_coco(dataset, model, threshold=0.05):
         for index in range(len(dataset)):
             data = dataset[index]
             scale = data['scale']
+            scale_w = data['sc_w']
+            scale_h = data['sc_h']
 
             # run network
             scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
@@ -30,7 +32,11 @@ def evaluate_coco(dataset, model, threshold=0.05):
             boxes  = boxes.cpu()
 
             # correct boxes for image scale
-            boxes /= scale
+            # boxes /= scale
+            boxes[:, 0] /= scale_w
+            boxes[:, 1] /= scale_h
+            boxes[:, 2] /= scale_w
+            boxes[:, 3] /= scale_h
 
             if boxes.shape[0] > 0:
                 # change to (x, y, w, h) (MS COCO standard)

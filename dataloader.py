@@ -342,9 +342,11 @@ class Resizer(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample, min_side=608, max_side=1024):
+        min_side, max_side = 300, 600
         image, annots = sample['img'], sample['annot']
 
         rows, cols, cns = image.shape
+        srows, scols, scns = image.shape
 
         smallest_side = min(rows, cols)
 
@@ -359,18 +361,35 @@ class Resizer(object):
             scale = max_side / largest_side
 
         # resize the image with the computed scale
-        image = skimage.transform.resize(image, (int(round(rows*scale)), int(round((cols*scale)))))
+        # image = skimage.transform.resize(image, (int(round(rows*scale)), int(round((cols*scale)))), mode='constant')
         rows, cols, cns = image.shape
+        rows, cols, cns = int(round(rows*scale)), int(round(cols*scale)), cns
 
         pad_w = 32 - rows%32
         pad_h = 32 - cols%32
+        # ------------
+        new_w = rows + pad_w
+        new_h = cols + pad_h
+        #scale_w = new_w / rows
+        #scale_h = new_h / cols
+        scale_w = new_w / srows
+        scale_h = new_h / scols
+        new_image = skimage.transform.resize(image, (new_w, new_h), mode='constant').astype(np.float32)
+        # ------------
 
-        new_image = np.zeros((rows + pad_w, cols + pad_h, cns)).astype(np.float32)
-        new_image[:rows, :cols, :] = image.astype(np.float32)
+        # new_image = np.zeros((rows + pad_w, cols + pad_h, cns)).astype(np.float32)
+        # new_image[:rows, :cols, :] = image.astype(np.float32)
 
-        annots[:, :4] *= scale
+        # annots[:, :4] *= scale
+        # ------------
+        annots[:, 0] *= scale_w
+        annots[:, 1] *= scale_h
+        annots[:, 2] *= scale_w
+        annots[:, 3] *= scale_h
+        # ------------
 
-        return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale}
+
+        return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale, 'sc_w':scale_w,'sc_h':scale_h}
 
 
 class Augmenter(object):

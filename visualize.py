@@ -6,6 +6,7 @@ import copy
 import pdb
 import time
 import argparse
+from tqdm import tqdm
 
 import sys
 import cv2
@@ -31,9 +32,14 @@ def main(args=None):
 	parser.add_argument('--csv_val', help='Path to file containing validation annotations (optional, see readme)')
 
 	parser.add_argument('--model', help='Path to model (.pt) file.')
+	parser.add_argument('--output_path', help='Path to save output imgs.')
 
 	parser = parser.parse_args(args)
 
+	out_path = parser.output_path#'./output_imgs/main_detect_v1/'
+	if not os.path.exists(out_path):
+            print('output dir not exists')
+            return
 	if parser.dataset == 'coco':
 		dataset_val = CocoDataset(parser.coco_path, set_name='val2017', transform=transforms.Compose([Normalizer(), Resizer()]))
 	elif parser.dataset == 'csv':
@@ -61,12 +67,12 @@ def main(args=None):
 		cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2)
 		cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
-	for idx, data in enumerate(dataloader_val):
+	for idx, data in tqdm(enumerate(dataloader_val)):
 
 		with torch.no_grad():
 			st = time.time()
 			scores, classification, transformed_anchors = retinanet(data['img'].cuda().float())
-			print('Elapsed time: {}'.format(time.time()-st))
+			#print('Elapsed time: {}'.format(time.time()-st))
 			idxs = np.where(scores>0.5)
 			img = np.array(255 * unnormalize(data['img'][0, :, :, :])).copy()
 
@@ -87,12 +93,14 @@ def main(args=None):
 				draw_caption(img, (x1, y1, x2, y2), label_name)
 
 				cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
-				print(label_name)
+				#print(label_name)
 
-			cv2.imshow('img', img)
-			cv2.waitKey(0)
+			cv2.imwrite(out_path+str(idx).zfill(5)+'.jpg', img)
+			#cv2.imshow('img', img)
+			#cv2.waitKey(0)
+		#break
 
 
 
 if __name__ == '__main__':
- main()
+    main()

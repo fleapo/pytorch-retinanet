@@ -1,3 +1,9 @@
+# test output imgs
+output_imgs/
+test_data/
+*.o
+*.pth
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -101,3 +107,4 @@ ENV/
 
 *.zip
 *.pt
+nohup.out

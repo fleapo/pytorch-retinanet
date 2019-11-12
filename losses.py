@@ -65,14 +65,18 @@ class FocalLoss(nn.Module):
             targets = torch.ones(classification.shape) * -1
             targets = targets.cuda()
 
-            targets[torch.lt(IoU_max, 0.4), :] = 0
+            # 小于阈值的都被置为0
+            #targets[torch.lt(IoU_max, 0.4), :] = 0
+            targets[torch.lt(IoU_max, 0.6), :] = 0
 
-            positive_indices = torch.ge(IoU_max, 0.5)
+            #positive_indices = torch.ge(IoU_max, 0.5)
+            positive_indices = torch.ge(IoU_max, 0.7)
 
             num_positive_anchors = positive_indices.sum()
 
             assigned_annotations = bbox_annotation[IoU_argmax, :]
 
+            # 大于阈值的也被置为0
             targets[positive_indices, :] = 0
             targets[positive_indices, assigned_annotations[positive_indices, 4].long()] = 1
 
