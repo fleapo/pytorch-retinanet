@@ -343,53 +343,95 @@ class Resizer(object):
 
     def __call__(self, sample, min_side=608, max_side=1024):
         min_side, max_side = 300, 600
+        # min_side, max_side = 150, 300
         image, annots = sample['img'], sample['annot']
 
-        rows, cols, cns = image.shape
-        srows, scols, scns = image.shape
+        sh, sw, cns = image.shape
+        h, w, cns = image.shape
 
-        smallest_side = min(rows, cols)
+        smallest_side = min(h, w)
 
         # rescale the image so the smallest side is min_side
         scale = min_side / smallest_side
 
         # check if the largest side is now greater than max_side, which can happen
         # when images have a large aspect ratio
-        largest_side = max(rows, cols)
+        largest_side = max(h, w)
 
         if largest_side * scale > max_side:
             scale = max_side / largest_side
 
         # resize the image with the computed scale
         # image = skimage.transform.resize(image, (int(round(rows*scale)), int(round((cols*scale)))), mode='constant')
-        rows, cols, cns = image.shape
-        rows, cols, cns = int(round(rows*scale)), int(round(cols*scale)), cns
+        h, w, cns = int(round(h*scale)), int(round(w*scale)), cns
 
-        pad_w = 32 - rows%32
-        pad_h = 32 - cols%32
+        pad_w = 32 - w%32
+        pad_h = 32 - h%32
         # ------------
-        new_w = rows + pad_w
-        new_h = cols + pad_h
+        new_w = w + pad_w
+        new_h = h + pad_h
         #scale_w = new_w / rows
         #scale_h = new_h / cols
-        scale_w = new_w / srows
-        scale_h = new_h / scols
-        new_image = skimage.transform.resize(image, (new_w, new_h), mode='constant').astype(np.float32)
-        # ------------
+        scale_w = new_w / sw
+        scale_h = new_h / sh
+        new_image = skimage.transform.resize(image, (new_h, new_w), mode='constant').astype(np.float32)
 
-        # new_image = np.zeros((rows + pad_w, cols + pad_h, cns)).astype(np.float32)
-        # new_image[:rows, :cols, :] = image.astype(np.float32)
-
-        # annots[:, :4] *= scale
-        # ------------
         annots[:, 0] *= scale_w
         annots[:, 1] *= scale_h
         annots[:, 2] *= scale_w
         annots[:, 3] *= scale_h
-        # ------------
-
 
         return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale, 'sc_w':scale_w,'sc_h':scale_h}
+
+    # def __call__(self, sample, min_side=608, max_side=1024):
+    #     min_side, max_side = 300, 600
+    #     image, annots = sample['img'], sample['annot']
+
+    #     rows, cols, cns = image.shape
+    #     srows, scols, scns = image.shape
+
+    #     smallest_side = min(rows, cols)
+
+    #     # rescale the image so the smallest side is min_side
+    #     scale = min_side / smallest_side
+
+    #     # check if the largest side is now greater than max_side, which can happen
+    #     # when images have a large aspect ratio
+    #     largest_side = max(rows, cols)
+
+    #     if largest_side * scale > max_side:
+    #         scale = max_side / largest_side
+
+    #     # resize the image with the computed scale
+    #     # image = skimage.transform.resize(image, (int(round(rows*scale)), int(round((cols*scale)))), mode='constant')
+    #     rows, cols, cns = image.shape
+    #     rows, cols, cns = int(round(rows*scale)), int(round(cols*scale)), cns
+
+    #     pad_w = 32 - rows%32
+    #     pad_h = 32 - cols%32
+    #     # ------------
+    #     new_w = rows + pad_w
+    #     new_h = cols + pad_h
+    #     #scale_w = new_w / rows
+    #     #scale_h = new_h / cols
+    #     scale_w = new_w / srows
+    #     scale_h = new_h / scols
+    #     new_image = skimage.transform.resize(image, (new_w, new_h), mode='constant').astype(np.float32)
+    #     # ------------
+
+    #     # new_image = np.zeros((rows + pad_w, cols + pad_h, cns)).astype(np.float32)
+    #     # new_image[:rows, :cols, :] = image.astype(np.float32)
+
+    #     # annots[:, :4] *= scale
+    #     # ------------
+    #     annots[:, 0] *= scale_w
+    #     annots[:, 1] *= scale_h
+    #     annots[:, 2] *= scale_w
+    #     annots[:, 3] *= scale_h
+    #     # ------------
+
+
+    #     return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale, 'sc_w':scale_w,'sc_h':scale_h}
 
 
 class Augmenter(object):

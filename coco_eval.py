@@ -31,12 +31,17 @@ def evaluate_coco(dataset, model, threshold=0.05):
             labels = labels.cpu()
             boxes  = boxes.cpu()
 
+            pre_boxes = boxes.clone()
             # correct boxes for image scale
             # boxes /= scale
             boxes[:, 0] /= scale_w
             boxes[:, 1] /= scale_h
             boxes[:, 2] /= scale_w
             boxes[:, 3] /= scale_h
+            #boxes[:, 0] /= scale_h
+            #boxes[:, 1] /= scale_w
+            #boxes[:, 2] /= scale_h
+            #boxes[:, 3] /= scale_w
 
             if boxes.shape[0] > 0:
                 # change to (x, y, w, h) (MS COCO standard)
@@ -55,11 +60,22 @@ def evaluate_coco(dataset, model, threshold=0.05):
                         break
 
                     # append detection for each positively labeled class
+                    image_info = dataset.coco.loadImgs(dataset.image_ids[index])[0]
+                    path       = image_info['file_name']
+                    gt_box = data['annot'][:4]
+                    gt_box[:, 0] /= scale_h
+                    gt_box[:, 1] /= scale_w
+                    gt_box[:, 2] /= scale_h
+                    gt_box[:, 3] /= scale_w
+                    gt_box = gt_box.int().tolist()
                     image_result = {
                         'image_id'    : dataset.image_ids[index],
                         'category_id' : dataset.label_to_coco_label(label),
                         'score'       : float(score),
+                        #'bbox'        : pre_boxes[box_id, :].tolist(),
                         'bbox'        : box.tolist(),
+                        'name'        : path,
+                        'annot'       : gt_box,
                     }
 
                     # append detection to results
